@@ -1,0 +1,3 @@
+{
+  "@dimaroot/tailscale" = import ./tailscale;
+}
