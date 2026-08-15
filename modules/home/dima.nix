@@ -1,6 +1,9 @@
 { ... }:
 {
-  imports = [ ./neovim ];
+  imports = [
+    ./neovim
+    ./shell
+  ];
 
   home = {
     username = "dima";

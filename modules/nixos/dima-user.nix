@@ -19,6 +19,8 @@ in
     users.dima = import ../home/dima.nix;
   };
 
+  programs.zsh.enable = true;
+
   users.mutableUsers = false;
 
   users.users = {
@@ -29,7 +31,7 @@ in
       uid = 8070;
       isNormalUser = true;
       createHome = true;
-      shell = pkgs.bashInteractive;
+      shell = pkgs.zsh;
       extraGroups = [
         "wheel"
         "networkmanager"
