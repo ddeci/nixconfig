@@ -46,6 +46,7 @@ in
           tap = kdlFlag;
           natural-scroll = kdlFlag;
         };
+        trackpoint.accel-speed = -0.5;
       };
 
       layout = {
