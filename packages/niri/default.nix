@@ -21,6 +21,24 @@ in
 
   config = {
     package = pkgs.niri;
+
+    # DMS owns live visual settings; Nix owns behavior and keybindings.
+    extraSettings =
+      map
+        (path: {
+          include = [
+            { optional = true; }
+            path
+          ];
+        })
+        [
+          "~/.config/niri/dms/alttab.kdl"
+          "~/.config/niri/dms/colors.kdl"
+          "~/.config/niri/dms/cursor.kdl"
+          "~/.config/niri/dms/layout.kdl"
+          "~/.config/niri/dms/wpblur.kdl"
+        ];
+
     settings = {
       input = {
         keyboard.xkb.layout = "us";
@@ -31,7 +49,6 @@ in
       };
 
       layout = {
-        gaps = 12;
         center-focused-column = "never";
         default-column-width.proportion = 0.5;
         preset-column-widths = [
@@ -50,7 +67,15 @@ in
           props.hotkey-overlay-title = "Open a terminal";
           content.spawn = "kitty";
         };
-        "Mod+Space" = dms "spotlight";
+        "Mod+B" = _: {
+          props.hotkey-overlay-title = "Open Firefox";
+          content.spawn = "firefox";
+        };
+        "Mod+E" = _: {
+          props.hotkey-overlay-title = "Open Files";
+          content.spawn = "nautilus";
+        };
+        "Mod+Space" = dms "spotlight-bar";
         "Mod+N" = dms "notifications";
         "Mod+Comma" = dms "settings";
         "Mod+P" = dms "notepad";
@@ -65,6 +90,67 @@ in
             "lock"
           ];
         };
+        "Mod+Ctrl+L" = _: {
+          props.repeat = false;
+          content.spawn = [
+            "dms"
+            "ipc"
+            "lock"
+            "lock"
+          ];
+        };
+
+        "XF86PowerOff" = dms "powermenu";
+        "XF86AudioRaiseVolume".spawn = [
+          "wpctl"
+          "set-volume"
+          "@DEFAULT_AUDIO_SINK@"
+          "5%+"
+        ];
+        "XF86AudioLowerVolume".spawn = [
+          "wpctl"
+          "set-volume"
+          "@DEFAULT_AUDIO_SINK@"
+          "5%-"
+        ];
+        "XF86AudioMute".spawn = [
+          "wpctl"
+          "set-mute"
+          "@DEFAULT_AUDIO_SINK@"
+          "toggle"
+        ];
+        "XF86AudioMicMute".spawn = [
+          "wpctl"
+          "set-mute"
+          "@DEFAULT_AUDIO_SOURCE@"
+          "toggle"
+        ];
+        "XF86MonBrightnessUp".spawn = [
+          "brightnessctl"
+          "set"
+          "+5%"
+        ];
+        "XF86MonBrightnessDown".spawn = [
+          "brightnessctl"
+          "set"
+          "5%-"
+        ];
+        "XF86AudioPlay".spawn = [
+          "playerctl"
+          "play-pause"
+        ];
+        "XF86AudioNext".spawn = [
+          "playerctl"
+          "next"
+        ];
+        "XF86AudioPrev".spawn = [
+          "playerctl"
+          "previous"
+        ];
+        "XF86AudioStop".spawn = [
+          "playerctl"
+          "stop"
+        ];
 
         "Mod+Q".close-window = kdlFlag;
         "Mod+H".focus-column-left = kdlFlag;
@@ -82,6 +168,7 @@ in
         "Mod+Minus".set-column-width = "-10%";
         "Mod+Equal".set-column-width = "+10%";
         "Print".screenshot = kdlFlag;
+        "Mod+Shift+S".screenshot = kdlFlag;
       };
     };
   };

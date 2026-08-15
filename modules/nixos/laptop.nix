@@ -1,4 +1,5 @@
-_: {
+{ pkgs, ... }:
+{
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = true;
@@ -21,6 +22,8 @@ _: {
   services.logind.settings.Login = {
     HandleLidSwitch = "suspend";
     HandleLidSwitchDocked = "ignore";
-    HandlePowerKey = "poweroff";
+    HandlePowerKey = "ignore";
   };
+
+  environment.systemPackages = [ pkgs.brightnessctl ];
 }

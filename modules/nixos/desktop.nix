@@ -42,12 +42,31 @@ in
     enable32Bit = true;
   };
 
+  xdg.mime = {
+    enable = true;
+    defaultApplications = {
+      "application/pdf" = "org.gnome.Papers.desktop";
+      "audio/mpeg" = "mpv.desktop";
+      "inode/directory" = "org.gnome.Nautilus.desktop";
+      "video/mp4" = "mpv.desktop";
+      "x-scheme-handler/http" = "firefox.desktop";
+      "x-scheme-handler/https" = "firefox.desktop";
+    };
+  };
+
   environment.systemPackages = with pkgs; [
+    file-roller
     firefox
     kitty
+    libreoffice-fresh
+    mpv
     nautilus
+    obsidian
+    papers
     pavucontrol
     playerctl
+    spotify
+    vesktop
     wl-clipboard
     xdg-utils
   ];
