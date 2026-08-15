@@ -63,6 +63,7 @@ in
     nautilus
     obsidian
     papers
+    papirus-icon-theme
     pavucontrol
     playerctl
     spotify

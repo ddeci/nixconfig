@@ -6,7 +6,6 @@
   };
 
   services = {
-    blueman.enable = true;
     libinput = {
       enable = true;
       touchpad = {
