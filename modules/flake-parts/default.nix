@@ -5,5 +5,6 @@
     ./devshell.nix
     ./formatter.nix
     ./packages.nix
+    ./templates.nix
   ];
 }
