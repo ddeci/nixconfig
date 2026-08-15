@@ -1,5 +1,4 @@
-_:
-{
+_: {
   programs = {
     bat.enable = true;
     btop.enable = true;
@@ -10,6 +9,7 @@ _:
     direnv = {
       enable = true;
       nix-direnv.enable = true;
+      config.hide_env_diff = true;
     };
 
     eza = {
@@ -77,6 +77,7 @@ _:
       };
 
       initContent = ''
+        unset DIRENV_CONFIG
         setopt AUTO_CD
       '';
 
