@@ -5,8 +5,7 @@
 }:
 let
   sshKeys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE5iZ0/HBn1HPJw/nMuJB9smTmhBkXdy4FiNVTXMtDqo github-ssh-key"
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM9UdUTxdNpRY5ad8vB+0fmLRZGCGctSkG88TN7WD2Da dima@dimaroot-bootstrap"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM5LZiPjCdKk1YN+q19kmXzI7LWjKXlMTaHtAqX13+Ir dima@beetroot"
   ];
 in
 {
