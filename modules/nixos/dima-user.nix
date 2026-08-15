@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   pkgs,
   ...
 }:
@@ -9,6 +10,15 @@ let
   ];
 in
 {
+  imports = [ inputs.home-manager.nixosModules.home-manager ];
+
+  home-manager = {
+    useGlobalPkgs = true;
+    useUserPackages = true;
+    backupFileExtension = "hm-backup";
+    users.dima = import ../home/dima.nix;
+  };
+
   users.mutableUsers = false;
 
   users.users = {
