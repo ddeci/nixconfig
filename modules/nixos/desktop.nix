@@ -10,7 +10,9 @@ in
   imports = [ ./pipewire.nix ];
 
   networking = {
+    dhcpcd.enable = false;
     networkmanager.enable = true;
+    useDHCP = false;
     useNetworkd = false;
   };
 
