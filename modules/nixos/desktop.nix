@@ -44,11 +44,14 @@ in
     enable32Bit = true;
   };
 
+  environment.sessionVariables.DISPLAY = ":0";
+
   xdg.mime = {
     enable = true;
     defaultApplications = {
       "application/pdf" = "org.gnome.Papers.desktop";
       "audio/mpeg" = "mpv.desktop";
+      "image/png" = "org.gnome.Loupe.desktop";
       "inode/directory" = "org.gnome.Nautilus.desktop";
       "video/mp4" = "mpv.desktop";
       "x-scheme-handler/http" = "firefox.desktop";
@@ -61,8 +64,10 @@ in
     firefox
     kitty
     libreoffice-fresh
+    loupe
     mpv
     nautilus
+    obs-studio
     obsidian
     papers
     papirus-icon-theme
@@ -72,5 +77,6 @@ in
     vesktop
     wl-clipboard
     xdg-utils
+    xwayland-satellite
   ];
 }
