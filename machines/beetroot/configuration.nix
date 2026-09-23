@@ -3,6 +3,7 @@
     ../../modules/nixos/base.nix
     ../../modules/nixos/desktop.nix
     ../../modules/nixos/laptop.nix
+    ../../modules/nixos/virtualbox.nix
   ];
 
   networking.hostName = "beetroot";

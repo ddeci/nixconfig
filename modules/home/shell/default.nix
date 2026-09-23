@@ -119,6 +119,7 @@ _: {
 
         nixconfig = "cd ~/git/nixconfig";
         nvimconfig = "nvim ~/git/nixconfig/modules/home/neovim/init.lua";
+        reptilian = "TERM=xterm-256color ssh reptilian-vm";
         rebuild = "sudo nixos-rebuild switch --flake ~/git/nixconfig#beetroot";
       };
     };
