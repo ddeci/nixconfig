@@ -5,12 +5,17 @@
 }:
 {
   imports = [
+    self.users.alex.nixosModule
     ./dima-user.nix
     ./llm-tools.nix
   ];
 
   time.timeZone = "America/New_York";
   i18n.defaultLocale = "en_US.UTF-8";
+
+  users.mutableUsers = false;
+  users.users.root.openssh.authorizedKeys.keys = self.users.dima.sshKeys ++ self.users.alex.sshKeys;
+  programs.zsh.enable = true;
 
   nixpkgs.config.allowUnfree = true;
   nix.settings = {
@@ -20,7 +25,8 @@
     ];
     trusted-users = [
       "root"
-      "dima"
+      self.users.dima.username
+      self.users.alex.username
     ];
   };
 

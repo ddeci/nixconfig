@@ -6,5 +6,6 @@
     ./formatter.nix
     ./packages.nix
     ./templates.nix
+    ./users.nix
   ];
 }
