@@ -112,30 +112,6 @@ let
         (stat {
           x = 5;
           w = 3;
-          title = "DNS";
-          # OK only if Blocky is up, blocking is on and the denylist actually loaded.
-          expr = ''(min(up{job="blocky"}) * min(blocky_blocking_enabled) * (sum(blocky_denylist_cache_entries) > bool 0)) or vector(0)'';
-          colorMode = "background";
-          steps = [
-            { color = "red"; }
-            {
-              color = "green";
-              value = 1;
-            }
-          ];
-          mappings = [
-            {
-              type = "value";
-              options = {
-                "0".text = "DOWN";
-                "1".text = "OK";
-              };
-            }
-          ];
-        })
-        (stat {
-          x = 8;
-          w = 3;
           title = "DNS p95";
           expr = "1000 * histogram_quantile(0.95, sum by (le) (rate(blocky_request_duration_seconds_bucket[5m])))";
           unit = "ms";
@@ -152,44 +128,87 @@ let
             }
           ];
         })
-        (stat {
-          x = 11;
-          w = 3;
-          title = "CPU";
-          expr = ''100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[2m])))'';
-          unit = "percent";
-          decimals = 0;
-          steps = [
-            { color = "green"; }
+        {
+          type = "timeseries";
+          title = "CPU · RAM (1h)";
+          gridPos = {
+            x = 8;
+            y = 0;
+            w = 9;
+            h = 11;
+          };
+          datasource = {
+            type = "prometheus";
+            uid = "prometheus";
+          };
+          timeFrom = "1h";
+          hideTimeOverride = true;
+          targets = [
             {
-              color = "orange";
-              value = 70;
+              refId = "A";
+              expr = ''100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[2m])))'';
+              legendFormat = "CPU";
             }
             {
-              color = "red";
-              value = 90;
-            }
-          ];
-        })
-        (stat {
-          x = 14;
-          w = 3;
-          title = "RAM";
-          expr = "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)";
-          unit = "percent";
-          decimals = 0;
-          steps = [
-            { color = "green"; }
-            {
-              color = "orange";
-              value = 80;
-            }
-            {
-              color = "red";
-              value = 90;
+              refId = "B";
+              expr = "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)";
+              legendFormat = "RAM";
             }
           ];
-        })
+          options = {
+            legend = {
+              showLegend = true;
+              displayMode = "list";
+              placement = "bottom";
+              calcs = [ "lastNotNull" ];
+            };
+            tooltip.mode = "none";
+          };
+          fieldConfig = {
+            defaults = {
+              unit = "percent";
+              min = 0;
+              max = 100;
+              decimals = 0;
+              color.mode = "palette-classic";
+              custom = {
+                lineWidth = 3;
+                fillOpacity = 20;
+                gradientMode = "opacity";
+                showPoints = "never";
+                axisPlacement = "hidden";
+                axisGridShow = false;
+              };
+            };
+            overrides =
+              map
+                (s: {
+                  matcher = {
+                    id = "byName";
+                    options = s.name;
+                  };
+                  properties = [
+                    {
+                      id = "color";
+                      value = {
+                        mode = "fixed";
+                        fixedColor = s.color;
+                      };
+                    }
+                  ];
+                })
+                [
+                  {
+                    name = "CPU";
+                    color = "green";
+                  }
+                  {
+                    name = "RAM";
+                    color = "blue";
+                  }
+                ];
+          };
+        }
         (stat {
           x = 17;
           w = 3;
