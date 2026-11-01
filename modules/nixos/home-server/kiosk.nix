@@ -141,6 +141,13 @@ let
       };
     };
 
+  # Grafana sizes the label column at its own auto font and right-aligns the
+  # (smaller) label, leaving dead space on the left. Trailing non-breaking
+  # spaces (plain spaces get collapsed) nudge each label back toward the
+  # middle. Per-row counts were measured in the rendered DOM: every label
+  # sits within ~6px of centred and both groups' bars end up a segment apart.
+  nbsp = builtins.fromJSON ''"\u00a0"'';
+
   meters =
     {
       x,
@@ -148,7 +155,8 @@ let
       rows,
     }:
     group {
-      inherit x w rows;
+      inherit x w;
+      rows = map (r: r // { name = r.name + lib.concatStrings (lib.replicate (r.pad or 0) nbsp); }) rows;
       type = "bargauge";
       options = {
         displayMode = "lcd";
@@ -181,6 +189,7 @@ let
           rows = [
             {
               name = "Ping";
+              pad = 5;
               expr = ''1000 * avg(probe_icmp_duration_seconds{job="ping",phase="rtt"} and on(instance) probe_success{job="ping"} == 1)'';
               unit = "ms";
               max = 100;
@@ -198,6 +207,7 @@ let
             }
             {
               name = "Loss";
+              pad = 5;
               expr = ''100 * (1 - avg(avg_over_time(probe_success{job="ping"}[5m])))'';
               unit = "percent";
               max = 10;
@@ -215,6 +225,7 @@ let
             }
             {
               name = "DNS";
+              pad = 5;
               expr = "1000 * histogram_quantile(0.95, sum by (le) (rate(blocky_request_duration_seconds_bucket[5m])))";
               unit = "ms";
               max = 200;
@@ -258,6 +269,7 @@ let
           rows = [
             {
               name = "CPU";
+              pad = 6;
               expr = ''100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[2m])))'';
               unit = "percent";
               max = 100;
@@ -275,6 +287,7 @@ let
             }
             {
               name = "RAM";
+              pad = 6;
               expr = "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)";
               unit = "percent";
               max = 100;
@@ -292,6 +305,7 @@ let
             }
             {
               name = "Temp";
+              pad = 5;
               expr = ''max(node_hwmon_temp_celsius{chip="platform_coretemp_0"})'';
               unit = "celsius";
               max = 100;
