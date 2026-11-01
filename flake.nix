@@ -19,6 +19,10 @@
 
     llm-agents.url = "github:numtide/llm-agents.nix";
 
+    mics-skills.url = "github:Mic92/mics-skills";
+    mics-skills.inputs.nixpkgs.follows = "nixpkgs";
+    mics-skills.inputs.treefmt-nix.follows = "treefmt-nix";
+
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
