@@ -8,6 +8,7 @@
     self.users.alex.nixosModule
     ./dima-user.nix
     ./llm-tools.nix
+    ./leviathan-cache.nix
   ];
 
   time.timeZone = "America/New_York";
