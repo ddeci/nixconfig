@@ -2,6 +2,13 @@
 let
   prometheusPort = config.services.prometheus.port;
   nodePort = config.services.prometheus.exporters.node.port;
+  blackboxPort = config.services.prometheus.exporters.blackbox.port;
+
+  # Internet reachability: ICMP to two independent anycast resolvers.
+  pingTargets = [
+    "1.1.1.1"
+    "9.9.9.9"
+  ];
   grafanaSecrets = config.clan.core.vars.generators.grafana.files;
 
   dashboards = pkgs.linkFarm "grafana-dashboards" [
@@ -44,6 +51,18 @@ in
       enabledCollectors = [ "systemd" ];
     };
 
+    exporters.blackbox = {
+      enable = true;
+      listenAddress = "127.0.0.1";
+      configFile = (pkgs.formats.yaml { }).generate "blackbox.yml" {
+        modules.icmp = {
+          prober = "icmp";
+          timeout = "5s";
+          icmp.preferred_ip_protocol = "ip4";
+        };
+      };
+    };
+
     scrapeConfigs = [
       {
         job_name = "prometheus";
@@ -56,6 +75,27 @@ in
       {
         job_name = "blocky";
         static_configs = [ { targets = [ config.services.blocky.settings.ports.http ]; } ];
+      }
+      {
+        job_name = "ping";
+        scrape_interval = "10s";
+        metrics_path = "/probe";
+        params.module = [ "icmp" ];
+        static_configs = [ { targets = pingTargets; } ];
+        relabel_configs = [
+          {
+            source_labels = [ "__address__" ];
+            target_label = "__param_target";
+          }
+          {
+            source_labels = [ "__param_target" ];
+            target_label = "instance";
+          }
+          {
+            target_label = "__address__";
+            replacement = "127.0.0.1:${toString blackboxPort}";
+          }
+        ];
       }
     ];
   };

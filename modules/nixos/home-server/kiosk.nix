@@ -7,6 +7,7 @@
 }:
 let
   grafanaUrl = "http://127.0.0.1:${toString config.services.grafana.settings.server.http_port}";
+  host = config.networking.hostName;
 
   # The 1U panel is 1920x440, but its controller only accepts 1920x1080 and
   # squeezes that vertically onto the panel. Lay the page out at the panel's
@@ -17,72 +18,150 @@ let
   };
   outputHeight = 1080;
   stretch = outputHeight * 1.0 / panel.height;
+  # The panel crops its edges (overscan); keep content inside this margin,
+  # in panel pixels.
+  overscan = {
+    x = 24;
+    y = 6;
+  };
 
-  stat =
+  datasource = {
+    type = "prometheus";
+    uid = "prometheus";
+  };
+
+  thresholds = steps: {
+    mode = "absolute";
+    steps = map (s: { value = null; } // s) steps;
+  };
+
+  # Every group is one full-height panel with one row per metric; overrides
+  # give each row its own unit, range and colours.
+  rowTargets =
+    instant: rows:
+    lib.imap0 (i: r: {
+      refId = builtins.elemAt [ "A" "B" "C" "D" ] i;
+      inherit (r) expr;
+      legendFormat = r.name;
+      inherit instant;
+      range = !instant;
+    }) rows;
+
+  rowOverrides = map (r: {
+    matcher = {
+      id = "byName";
+      options = r.name;
+    };
+    properties = [
+      {
+        id = "unit";
+        value = r.unit;
+      }
+      {
+        id = "decimals";
+        value = 0;
+      }
+      {
+        id = "thresholds";
+        value = thresholds r.steps;
+      }
+    ]
+    ++ lib.optionals (r ? max) [
+      {
+        id = "min";
+        value = r.min or 0;
+      }
+      {
+        id = "max";
+        value = r.max;
+      }
+    ];
+  });
+
+  group =
     {
       x,
       w,
-      title,
-      expr,
-      unit ? "none",
-      decimals ? null,
-      steps ? [ { color = "green"; } ],
-      mappings ? [ ],
-      colorMode ? "value",
-      # Grafana auto-fits the value to the tile; wide tiles need a cap so
-      # the number does not crowd out the label.
-      valueSize ? null,
+      type,
+      rows,
+      options,
+      instant ? true,
       extra ? { },
     }:
     {
-      type = "stat";
+      inherit type datasource;
       gridPos = {
         inherit x w;
         y = 0;
-        # Fills the 440px viewport so Grafana's footer falls below the fold.
+        # Fills the viewport inside the overscan margin, so Grafana's footer
+        # falls below the fold.
         h = 11;
       };
-      datasource = {
-        type = "prometheus";
-        uid = "prometheus";
-      };
-      targets = [
-        {
-          refId = "A";
-          inherit expr;
-          instant = true;
-          range = false;
-        }
-      ];
+      targets = rowTargets instant rows;
       options = {
         reduceOptions = {
           calcs = [ "lastNotNull" ];
           fields = "";
           values = false;
         };
-        textMode = "value_and_name";
-        inherit colorMode;
-        graphMode = "none";
-        justifyMode = "center";
-        text = {
-          titleSize = 40;
-        }
-        // lib.optionalAttrs (valueSize != null) { inherit valueSize; };
-      };
+        orientation = "horizontal";
+      }
+      // options;
       fieldConfig = {
-        defaults = {
-          displayName = title;
-          inherit unit decimals mappings;
-          color.mode = "thresholds";
-          thresholds = {
-            mode = "absolute";
-            steps = map (s: { value = null; } // s) steps;
-          };
-        };
-        overrides = [ ];
+        defaults.color.mode = "thresholds";
+        overrides = rowOverrides rows;
       };
     }
     // extra;
+
+  stacked =
+    {
+      x,
+      w,
+      rows,
+      sparkline ? false,
+    }:
+    group {
+      inherit x w rows;
+      type = "stat";
+      instant = !sparkline;
+      options = {
+        textMode = "value_and_name";
+        colorMode = "value";
+        graphMode = if sparkline then "area" else "none";
+        justifyMode = "auto";
+        text = {
+          titleSize = 40;
+          valueSize = 72;
+        };
+      };
+      extra = lib.optionalAttrs sparkline {
+        timeFrom = "1h";
+        hideTimeOverride = true;
+      };
+    };
+
+  meters =
+    {
+      x,
+      w,
+      rows,
+    }:
+    group {
+      inherit x w rows;
+      type = "bargauge";
+      options = {
+        displayMode = "lcd";
+        valueMode = "color";
+        namePlacement = "left";
+        showUnfilled = true;
+        sizing = "auto";
+        text = {
+          titleSize = 36;
+          valueSize = 44;
+        };
+      };
+    };
 
   rackDashboard = pkgs.writeTextDir "rack.json" (
     builtins.toJSON {
@@ -96,146 +175,139 @@ let
         to = "now";
       };
       panels = [
-        (stat {
+        (meters {
           x = 0;
-          w = 5;
-          title = "Blocked today";
-          expr = ''sum(increase(blocky_response_total{response_type="BLOCKED"}[$__range]))'';
-          decimals = 0;
-          valueSize = 140;
-          steps = [ { color = "blue"; } ];
-          extra = {
-            timeFrom = "now/d";
-            hideTimeOverride = true;
-          };
-        })
-        (stat {
-          x = 5;
-          w = 3;
-          title = "DNS p95";
-          expr = "1000 * histogram_quantile(0.95, sum by (le) (rate(blocky_request_duration_seconds_bucket[5m])))";
-          unit = "ms";
-          decimals = 0;
-          steps = [
-            { color = "green"; }
+          w = 9;
+          rows = [
             {
-              color = "orange";
-              value = 100;
-            }
-            {
-              color = "red";
-              value = 500;
-            }
-          ];
-        })
-        {
-          type = "timeseries";
-          title = "CPU · RAM (1h)";
-          gridPos = {
-            x = 8;
-            y = 0;
-            w = 9;
-            h = 11;
-          };
-          datasource = {
-            type = "prometheus";
-            uid = "prometheus";
-          };
-          timeFrom = "1h";
-          hideTimeOverride = true;
-          targets = [
-            {
-              refId = "A";
-              expr = ''100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[2m])))'';
-              legendFormat = "CPU";
-            }
-            {
-              refId = "B";
-              expr = "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)";
-              legendFormat = "RAM";
-            }
-          ];
-          options = {
-            legend = {
-              showLegend = true;
-              displayMode = "list";
-              placement = "bottom";
-              calcs = [ "lastNotNull" ];
-            };
-            tooltip.mode = "none";
-          };
-          fieldConfig = {
-            defaults = {
-              unit = "percent";
-              min = 0;
+              name = "Ping";
+              expr = ''1000 * avg(probe_icmp_duration_seconds{job="ping",phase="rtt"} and on(instance) probe_success{job="ping"} == 1)'';
+              unit = "ms";
               max = 100;
-              decimals = 0;
-              color.mode = "palette-classic";
-              custom = {
-                lineWidth = 3;
-                fillOpacity = 20;
-                gradientMode = "opacity";
-                showPoints = "never";
-                axisPlacement = "hidden";
-                axisGridShow = false;
-              };
-            };
-            overrides =
-              map
-                (s: {
-                  matcher = {
-                    id = "byName";
-                    options = s.name;
-                  };
-                  properties = [
-                    {
-                      id = "color";
-                      value = {
-                        mode = "fixed";
-                        fixedColor = s.color;
-                      };
-                    }
-                  ];
-                })
-                [
-                  {
-                    name = "CPU";
-                    color = "green";
-                  }
-                  {
-                    name = "RAM";
-                    color = "blue";
-                  }
-                ];
-          };
-        }
-        (stat {
-          x = 17;
-          w = 3;
-          title = "Temp";
-          expr = ''max(node_hwmon_temp_celsius{chip="platform_coretemp_0"})'';
-          unit = "celsius";
-          decimals = 0;
-          steps = [
-            { color = "green"; }
-            {
-              color = "orange";
-              value = 70;
+              steps = [
+                { color = "green"; }
+                {
+                  color = "orange";
+                  value = 50;
+                }
+                {
+                  color = "red";
+                  value = 80;
+                }
+              ];
             }
             {
-              color = "red";
-              value = 85;
+              name = "Loss";
+              expr = ''100 * (1 - avg(avg_over_time(probe_success{job="ping"}[5m])))'';
+              unit = "percent";
+              max = 10;
+              steps = [
+                { color = "green"; }
+                {
+                  color = "orange";
+                  value = 1;
+                }
+                {
+                  color = "red";
+                  value = 5;
+                }
+              ];
+            }
+            {
+              name = "DNS";
+              expr = "1000 * histogram_quantile(0.95, sum by (le) (rate(blocky_request_duration_seconds_bucket[5m])))";
+              unit = "ms";
+              max = 200;
+              steps = [
+                { color = "green"; }
+                {
+                  color = "orange";
+                  value = 100;
+                }
+                {
+                  color = "red";
+                  value = 150;
+                }
+              ];
             }
           ];
         })
-        (stat {
-          x = 20;
-          w = 4;
-          title = "Uptime";
-          expr = "time() - node_boot_time_seconds";
-          unit = "s";
-          decimals = 0;
-          steps = [ { color = "blue"; } ];
+        (stacked {
+          x = 9;
+          w = 6;
+          sparkline = true;
+          rows = [
+            {
+              name = "Devices";
+              # Clients that used DNS in the last hour, minus this box itself.
+              expr = ''count(sum by (client) (increase(blocky_client_response_total{client!~"${host}.*|127\\.0\\.0\\.1"}[1h])) > 0) or vector(0)'';
+              unit = "none";
+              steps = [ { color = "blue"; } ];
+            }
+            {
+              name = "Blocked";
+              expr = ''100 * sum(increase(blocky_response_total{response_type="BLOCKED"}[24h])) / sum(increase(blocky_query_total[24h]))'';
+              unit = "percent";
+              steps = [ { color = "purple"; } ];
+            }
+          ];
+        })
+        (meters {
+          x = 15;
+          w = 9;
+          rows = [
+            {
+              name = "CPU";
+              expr = ''100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[2m])))'';
+              unit = "percent";
+              max = 100;
+              steps = [
+                { color = "green"; }
+                {
+                  color = "orange";
+                  value = 70;
+                }
+                {
+                  color = "red";
+                  value = 90;
+                }
+              ];
+            }
+            {
+              name = "RAM";
+              expr = "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)";
+              unit = "percent";
+              max = 100;
+              steps = [
+                { color = "green"; }
+                {
+                  color = "orange";
+                  value = 80;
+                }
+                {
+                  color = "red";
+                  value = 90;
+                }
+              ];
+            }
+            {
+              name = "Temp";
+              expr = ''max(node_hwmon_temp_celsius{chip="platform_coretemp_0"})'';
+              unit = "celsius";
+              max = 100;
+              steps = [
+                { color = "green"; }
+                {
+                  color = "orange";
+                  value = 70;
+                }
+                {
+                  color = "red";
+                  value = 85;
+                }
+              ];
+            }
+          ];
         })
       ];
     }
@@ -247,11 +319,20 @@ let
       <head>
         <style>
           html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #111217; }
+          /* Visible area inside the overscan margin; clips Grafana's footer. */
+          .safe {
+            position: absolute;
+            left: ${toString overscan.x}px;
+            top: ${toString (overscan.y * stretch)}px;
+            width: ${toString (panel.width - 2 * overscan.x)}px;
+            height: ${toString ((panel.height - 2 * overscan.y) * stretch)}px;
+            overflow: hidden;
+          }
           iframe {
             border: 0;
-            width: ${toString panel.width}px;
-            /* Extra room below the panel area pushes Grafana's footer off-screen. */
-            height: ${toString (panel.height + 24)}px;
+            width: 100%;
+            /* Extra room below the panel area pushes Grafana's footer out of view. */
+            height: ${toString (panel.height - 2 * overscan.y + 24)}px;
             transform: scale(1, ${toString stretch});
             transform-origin: 0 0;
             /* Display only: a stray tap must not navigate the dashboard. */
@@ -260,7 +341,9 @@ let
         </style>
       </head>
       <body>
-        <iframe scrolling="no" src="${grafanaUrl}/d/rack?kiosk&_dash.hideTimePicker&_dash.hideVariables&_dash.hideLinks&refresh=30s"></iframe>
+        <div class="safe">
+          <iframe scrolling="no" src="${grafanaUrl}/d/rack?kiosk&_dash.hideTimePicker&_dash.hideVariables&_dash.hideLinks&refresh=30s"></iframe>
+        </div>
       </body>
     </html>
   '';
