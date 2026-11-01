@@ -38,6 +38,16 @@
           "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt"
         ];
         clientGroupsBlock.default = [ "ads" ];
+        # Serve DNS right away and keep retrying the list download for ~5 min:
+        # clan disables wait-online, and after a power cut the router's WAN
+        # comes up well after this box has a link.
+        loading = {
+          strategy = "fast";
+          downloads = {
+            attempts = 30;
+            cooldown = "10s";
+          };
+        };
       };
 
       caching.prefetching = true;
