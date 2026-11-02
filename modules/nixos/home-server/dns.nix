@@ -33,11 +33,23 @@
       ];
 
       blocking = {
-        denylists.ads = [
-          # HaGeZi Pro, wildcard format (the one HaGeZi lists for Blocky).
-          "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt"
+        denylists = {
+          ads = [
+            # HaGeZi Pro, wildcard format (the one HaGeZi lists for Blocky).
+            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.txt"
+          ];
+          # Firefox's canary domain: answering NXDOMAIN makes Firefox keep using
+          # the network's DNS instead of its own DoH, which would bypass Blocky.
+          # (Entries with a newline are inline lists, not URLs.)
+          doh-canary = [ "use-application-dns.net\n" ];
+        };
+        clientGroupsBlock.default = [
+          "ads"
+          "doh-canary"
         ];
-        clientGroupsBlock.default = [ "ads" ];
+        # NXDOMAIN rather than 0.0.0.0: Firefox treats 0.0.0.0 as a real answer
+        # for the canary, and ads fail to load either way.
+        blockType = "nxDomain";
         # Serve DNS right away and keep retrying the list download for ~5 min:
         # clan disables wait-online, and after a power cut the router's WAN
         # comes up well after this box has a link.
