@@ -28,6 +28,9 @@ in
     clientLookup.upstream = router;
   };
 
+  # LAN address works at home and, via the subnet route, from anywhere on the tailnet.
+  services.ntfy-sh.settings.base-url = "http://${lanAddress}:2586";
+
   # Expose the home LAN to the tailnet; the route must be approved in the admin console.
   services.tailscale = {
     useRoutingFeatures = "server";

@@ -386,6 +386,9 @@ in
 
   # cage-tty1 hangs off graphical.target; servers otherwise stop at multi-user.
   systemd.defaultUnit = "graphical.target";
+  # cage-tty1 conflicts with the tty1 login prompt; if a switch starts that
+  # getty, systemd stops the kiosk. Keep tty1 for the kiosk only.
+  systemd.services."getty@tty1".enable = false;
 
   services.grafana = {
     settings = {
