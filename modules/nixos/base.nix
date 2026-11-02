@@ -7,7 +7,6 @@
   imports = [
     self.users.alex.nixosModule
     ./dima-user.nix
-    ./llm-tools.nix
     ./leviathan-cache.nix
   ];
 

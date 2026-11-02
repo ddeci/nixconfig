@@ -1,8 +1,6 @@
 { ... }:
 {
   imports = [
-    ./herdr.nix
-    ./kagi-search.nix
     ./neovim
     ./shell
   ];

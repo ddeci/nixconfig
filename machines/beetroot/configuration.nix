@@ -5,6 +5,7 @@
     ../../modules/nixos/laptop.nix
     ../../modules/nixos/mariadb.nix
     ../../modules/nixos/virtualbox.nix
+    ../../modules/nixos/workstation.nix
   ];
 
   networking.hostName = "beetroot";
