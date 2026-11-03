@@ -99,7 +99,9 @@ in
                 # Partial loss only: every sample in the window had at least one
                 # target answering. Full outages (and boot before the WAN is up)
                 # are InternetDown's job, not a "packet loss" alert.
-                expr = ''100 * (1 - avg(avg_over_time(probe_success{job="ping"}[10m]))) > 5 and on() min_over_time(max(probe_success{job="ping"})[10m:]) > 0'';
+                # Subquery step matches the 10s probe interval; the default (rule
+                # evaluation interval) can step over a sub-minute outage.
+                expr = ''100 * (1 - avg(avg_over_time(probe_success{job="ping"}[10m]))) > 5 and on() min_over_time(max(probe_success{job="ping"})[10m:10s]) > 0'';
                 for = "5m";
                 summary = "Internet packet loss above 5%";
               })
