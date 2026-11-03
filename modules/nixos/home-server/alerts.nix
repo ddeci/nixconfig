@@ -55,6 +55,9 @@ in
     alertmanager = {
       enable = true;
       listenAddress = "127.0.0.1";
+      # Single instance: no gossip cluster. Clustering needs a routable address
+      # at startup, so a boot before the network is up crashed Alertmanager.
+      extraFlags = [ "--cluster.listen-address=" ];
       configuration = {
         route = {
           receiver = "ntfy";
@@ -93,7 +96,10 @@ in
               })
               (rule {
                 alert = "PacketLoss";
-                expr = ''100 * (1 - avg(avg_over_time(probe_success{job="ping"}[10m]))) > 5'';
+                # Partial loss only: every sample in the window had at least one
+                # target answering. Full outages (and boot before the WAN is up)
+                # are InternetDown's job, not a "packet loss" alert.
+                expr = ''100 * (1 - avg(avg_over_time(probe_success{job="ping"}[10m]))) > 5 and on() min_over_time(max(probe_success{job="ping"})[10m:]) > 0'';
                 for = "5m";
                 summary = "Internet packet loss above 5%";
               })
