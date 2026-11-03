@@ -386,9 +386,11 @@ in
 
   # cage-tty1 hangs off graphical.target; servers otherwise stop at multi-user.
   systemd.defaultUnit = "graphical.target";
-  # cage-tty1 conflicts with the tty1 login prompt; if a switch starts that
-  # getty, systemd stops the kiosk. Keep tty1 for the kiosk only.
-  systemd.services."getty@tty1".enable = false;
+  # NixOS makes getty.target want autovt@tty1 unless a display manager is
+  # enabled (cage isn't one). switch-to-configuration then starts that tty1
+  # login on every deploy, and cage-tty1's Conflicts= stops the kiosk.
+  # Drop the want, as display managers do, so tty1 stays the kiosk's.
+  systemd.targets.getty.wants = lib.mkForce [ ];
 
   services.grafana = {
     settings = {
